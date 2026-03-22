@@ -1,7 +1,7 @@
 {
-  "name": "Smario & FCNils Live Scores",
-  "short_name": "Live Scores",
-  "start_url": "./index.html",
+  "name": "Smario444 & FCNILS LiveScore",
+  "short_name": "LiveScore",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#050505",
   "theme_color": "#fbbf24",
@@ -9,7 +9,8 @@
     {
       "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
