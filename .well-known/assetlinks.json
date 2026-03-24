@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.smario44444_collab.twa",
+        "sha256_cert_fingerprints": ["EE:0C:EA:BB:84:34:60:3D:AB:74:8A:68:20:3B:7A:53:6F:7C:C1:1F:53:82:CE:5F:B8:DB:9D:6B:78:94:D8:12"]
+      }
+    }]
