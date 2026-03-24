@@ -589,29 +589,14 @@
             "Holstein Kiel": "269", "Kiel": "269", "VfL Bochum": "80", "Bochum": "80"
         };
 
-        const selectableLeagues = [
-            {
-                league: "1. Bundesliga",
-                teams: ["FC Bayern München", "Bayer 04 Leverkusen", "VfB Stuttgart", "RB Leipzig", "Borussia Dortmund", "Eintracht Frankfurt", "TSG 1899 Hoffenheim", "1. FC Heidenheim 1846", "Werder Bremen", "SC Freiburg", "FC Augsburg", "VfL Wolfsburg", "1. FSV Mainz 05", "Borussia Mönchengladbach", "1. FC Union Berlin", "VfL Bochum", "FC St. Pauli", "Holstein Kiel"]
-            },
-            {
-                league: "2. Bundesliga",
-                teams: ["1. FC Köln", "SV Darmstadt 98", "Fortuna Düsseldorf", "Hamburger SV", "Karlsruher SC", "Hannover 96", "SC Paderborn 07", "SpVgg Greuther Fürth", "Hertha BSC", "FC Schalke 04", "SV Elversberg", "1. FC Nürnberg", "1. FC Kaiserslautern", "1. FC Magdeburg", "Eintracht Braunschweig", "SSV Ulm 1846", "Preußen Münster", "Jahn Regensburg"]
-            },
-            {
-                league: "3. Liga",
-                teams: ["1. FC Saarbrücken", "1860 München", "Alemannia Aachen", "Arminia Bielefeld", "Dynamo Dresden", "Energie Cottbus", "Erzgebirge Aue", "Hansa Rostock", "Ingolstadt", "Rot-Weiss Essen", "SC Verl", "VfL Osnabrück", "Viktoria Köln", "Waldhof Mannheim", "Wehen Wiesbaden"]
-            }
-        ];
-
         const knownPlayerImages = {
             "Harry Kane": "https://img.a.transfermarkt.technology/portrait/medium/132098-1700211169.jpg?lm=1",
             "Deniz Undav": "https://img.a.transfermarkt.technology/portrait/medium/339314-1691999036.jpg?lm=1",
             "Luis Díaz": "https://img.a.transfermarkt.technology/portrait/medium/480692-1757938077.jpg?lm=1",
             "Serhou Guirassy": "https://img.a.transfermarkt.technology/portrait/medium/270541-1755989642.jpg?lm=1",
             "Christoph Baumgartner": "https://img.a.transfermarkt.technology/portrait/medium/324278-1716315718.jpg?lm=1",
-            "Michael Olise": "https://img.a.transfermarkt.technology/portrait/medium/203123-1720778399.jpg?lm=1",
-            "Haris Tabakovic": "https://img.a.transfermarkt.technology/portrait/medium/566723-1762944477.jpg?lm=1",
+            "Michael Olise": "https://img.a.transfermarkt.technology/portrait/medium/566723-1762944477.jpg?lm=1", /* ID KORRIGIERT */
+            "Haris Tabakovic": "https://img.a.transfermarkt.technology/portrait/medium/203123-1720778399.jpg?lm=1", /* ID KORRIGIERT */
             "Yan Diomande": "https://img.a.transfermarkt.technology/portrait/medium/1390649-1759779499.jpg?lm=1",
             "Andrej Kramaric": "https://img.a.transfermarkt.technology/portrait/medium/46580-1755089885.jpg?lm=1",
             "Said El Mala": "https://img.a.transfermarkt.technology/portrait/medium/1168219-1761497362.jpg?lm=1",
@@ -696,7 +681,7 @@
         let groupIdx = 0;
         let groupList = [];
         let currentMatchList = []; 
-        let knownMatchStates = {}; // Speichert Spielstände für Push Notifications
+        let knownMatchStates = {}; 
         
         let favoriteTeams = [];
         try {
@@ -736,25 +721,48 @@
             return favoriteTeams.some(function(fav) { return getTeamId(fav) === tId; });
         }
 
-        /* TEAM SELECTION & PUSH PERMISSION */
-        function openFavModal() {
+        /* TEAM SELECTION & PUSH PERMISSION (Dynamisch sortiert nach aktueller Tabelle) */
+        async function openFavModal() {
             const container = document.getElementById('team-checkboxes');
-            let html = '';
-            selectableLeagues.forEach(function(leagueGroup) {
-                html += `<div class="sticky top-0 bg-zinc-900 z-10 font-black text-[10px] text-zinc-500 uppercase tracking-widest py-2 px-2 border-b border-zinc-800 mt-2 first:mt-0">${leagueGroup.league}</div>`;
-                leagueGroup.teams.forEach(function(team) {
-                    const isChecked = favoriteTeams.includes(team) ? 'checked' : '';
-                    html += `
-                        <label class="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg cursor-pointer transition-colors">
-                            <input type="checkbox" value="${team}" class="team-checkbox accent-yellow-500 w-4 h-4 rounded" ${isChecked}>
-                            <img src="${resolveLogo(team)}" class="w-6 h-6 object-contain filter drop-shadow-md">
-                            <span class="text-white text-sm font-bold">${team}</span>
-                        </label>
-                    `;
-                });
-            });
-            container.innerHTML = html;
+            
+            container.innerHTML = '<div class="py-10 text-center text-zinc-500 font-bold uppercase text-xs animate-pulse">Lade aktuelle Tabellen...</div>';
             document.getElementById('fav-modal-overlay').classList.add('open');
+
+            try {
+                const [tableBl1, tableBl2, tableBl3] = await Promise.all([
+                    api("https://api.openligadb.de/getbltable/bl1/2025"),
+                    api("https://api.openligadb.de/getbltable/bl2/2025"),
+                    api("https://api.openligadb.de/getbltable/bl3/2025")
+                ]);
+
+                const dynamicLeagues = [
+                    { league: "1. Bundesliga", teams: tableBl1.map(function(t) { return t.teamName; }) },
+                    { league: "2. Bundesliga", teams: tableBl2.map(function(t) { return t.teamName; }) },
+                    { league: "3. Liga", teams: tableBl3.map(function(t) { return t.teamName; }) }
+                ];
+
+                let html = '';
+                dynamicLeagues.forEach(function(leagueGroup) {
+                    html += `<div class="sticky top-0 bg-zinc-900 z-10 font-black text-[10px] text-zinc-500 uppercase tracking-widest py-2 px-2 border-b border-zinc-800 mt-2 first:mt-0">${leagueGroup.league}</div>`;
+                    
+                    leagueGroup.teams.forEach(function(team) {
+                        const isChecked = favoriteTeams.includes(team) ? 'checked' : '';
+                        html += `
+                            <label class="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg cursor-pointer transition-colors">
+                                <input type="checkbox" value="${team}" class="team-checkbox accent-yellow-500 w-4 h-4 rounded" ${isChecked}>
+                                <img src="${resolveLogo(team)}" class="w-6 h-6 object-contain filter drop-shadow-md">
+                                <span class="text-white text-sm font-bold">${team}</span>
+                            </label>
+                        `;
+                    });
+                });
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error("Fehler beim Laden der Modal-Tabellen:", error);
+                container.innerHTML = '<div class="py-10 text-center text-red-500 font-bold uppercase text-xs">Fehler beim Laden der Teams</div>';
+            }
         }
 
         function saveFavoriteTeam() {
@@ -763,7 +771,6 @@
             localStorage.setItem('smario_fav_teams', JSON.stringify(favoriteTeams));
             document.getElementById('fav-modal-overlay').classList.remove('open');
             
-            // PUSH PERMISSION ANFRAGEN (Einmalig im Browser)
             if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
                 Notification.requestPermission();
             }
@@ -799,55 +806,86 @@
             }
         }
 
+        /* HILFSFUNKTION FÜR MOBILE BENACHRICHTIGUNGEN */
+        async function showAppNotification(title, body) {
+            if (!("Notification" in window) || Notification.permission !== "granted") return;
+            
+            const options = {
+                body: body,
+                icon: 'icon.png', 
+                badge: 'icon.png',
+                vibrate: [200, 100, 200]
+            };
+
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration && registration.showNotification) {
+                    registration.showNotification(title, options);
+                } else {
+                    new Notification(title, options);
+                }
+            } catch (e) {
+                new Notification(title, options);
+            }
+        }
+
         /* PUSH NOTIFICATION ENGINE (IN-APP) */
         function checkAndNotify(matches) {
-            if (!("Notification" in window) || Notification.permission !== "granted") return;
-
             matches.forEach(function(m) {
                 const matchId = m.matchID;
                 const currentGoalCount = m.goals ? m.goals.length : 0;
                 const now = new Date();
-                const isLive = now > new Date(m.matchDateTimeUTC) && !m.matchIsFinished;
+                const matchTime = new Date(m.matchDateTimeUTC);
+                const isLive = now > matchTime && !m.matchIsFinished;
                 
                 const t1 = m.team1.shortName || m.team1.teamName;
                 const t2 = m.team2.shortName || m.team2.teamName;
+                
                 const isFav = isSpecialGreenTeam(m.team1.teamName) || isSpecialGreenTeam(m.team2.teamName);
 
-                // Anti-Spam: Benachrichtige nur bei Favoriten (falls welche gewählt). 
-                // Wenn gar keine gewählt sind, bei allen Live-Spielen im aktuellen Tab.
-                if (favoriteTeams.length > 0 && !isFav) return;
+                if (!isFav) return; // Nur Favoriten benachrichtigen
+
+                let pts1 = "0", pts2 = "0";
+                if (m.matchResults && m.matchResults.length > 0) {
+                    const finalRes = m.matchResults.find(r => r.resultTypeID === 2) || m.matchResults[0];
+                    pts1 = finalRes.pointsTeam1;
+                    pts2 = finalRes.pointsTeam2;
+                }
 
                 if (knownMatchStates[matchId]) {
                     const prev = knownMatchStates[matchId];
 
-                    // Check Anpfiff
                     if (!prev.isLive && isLive && !m.matchIsFinished) {
-                        new Notification("⚽ Anpfiff!", { 
-                            body: `Das Spiel ${t1} gegen ${t2} hat begonnen!`
-                        });
+                        showAppNotification("⚽ Anpfiff!", `Das Spiel ${t1} gegen ${t2} hat begonnen!`);
                     }
 
-                    // Check Tore
                     if (currentGoalCount > prev.goals) {
                         const latestGoal = m.goals[currentGoalCount - 1];
                         const scorer = latestGoal.goalGetterName;
                         const score = `${latestGoal.scoreTeam1}:${latestGoal.scoreTeam2}`;
-                        new Notification("🚨 TOR!", { 
-                            body: `${score} durch ${scorer} (${t1} vs ${t2})` 
-                        });
+                        showAppNotification("🚨 TOR!", `${score} durch ${scorer} (${t1} vs ${t2})`);
+                    }
+                    
+                    if (!prev.isFinished && m.matchIsFinished) {
+                        showAppNotification("🏁 Abpfiff!", `Das Spiel ${t1} gegen ${t2} ist beendet. Endstand: ${pts1}:${pts2}`);
                     }
                 }
 
-                // Update State
                 knownMatchStates[matchId] = {
                     goals: currentGoalCount,
-                    isLive: isLive
+                    isLive: isLive,
+                    isFinished: m.matchIsFinished
                 };
             });
         }
 
         /* INITIALISIERUNG */
         async function initApp() {
+            // Service Worker für Push auf Handys
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('Service Worker Fehler:', err));
+            }
+
             if (!localStorage.getItem('smario_fav_teams_asked')) {
                 localStorage.setItem('smario_fav_teams_asked', 'true');
                 openFavModal();
